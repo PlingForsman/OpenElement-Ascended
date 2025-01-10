@@ -114,8 +114,7 @@ class ProcessWindow:
 
         img: cv.Mat = cv.cvtColor(self.screenshot(), cv.COLOR_BGR2RGB)
         pixel_rgb: np.ndarray = img[xy[1], xy[0]]
-        print(pixel_rgb)
-        
+                
         return all(abs(pixel_rgb[i] - rgb[i]) <= variance for i in range(3))
 
         
