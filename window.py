@@ -1,6 +1,8 @@
-import ctypes, win32gui
+import ctypes, win32gui, win32ui
 from pathlib import Path
 import cv2 as cv
+import numpy as np
+import time
 
 
 class ProcessWindow:
@@ -55,8 +57,66 @@ class ProcessWindow:
 
         return False # No crash window was found 
     
-    def screenshot(self, region: tuple[int, int] = None) -> cv.Mat:
-        pass
+    def screenshot(self) -> cv.Mat:
+
+        # I dont recommend touching this shit
+
+        hwnd_dc = win32gui.GetWindowDC(self.hwnd)
+        mfc_dc = win32ui.CreateDCFromHandle(hwnd_dc)
+        save_dc = mfc_dc.CreateCompatibleDC()
+        
+        save_bit_map = win32ui.CreateBitmap()
+        save_bit_map.CreateCompatibleBitmap(mfc_dc, self.resolution[0], self.resolution[1])
+        save_dc.SelectObject(save_bit_map)
+        
+        result = ctypes.windll.user32.PrintWindow(self.hwnd, save_dc.GetSafeHdc(), 2)
+        
+        bmp_info = save_bit_map.GetInfo()
+        bmp_data = save_bit_map.GetBitmapBits(True)
+        
+        win32gui.DeleteObject(save_bit_map.GetHandle())
+        save_dc.DeleteDC()
+        mfc_dc.DeleteDC()
+        win32gui.ReleaseDC(self.hwnd, hwnd_dc)
+        
+        if result == 1:
+            screenshot = np.frombuffer(bmp_data, dtype=np.uint8)
+            screenshot = screenshot.reshape((bmp_info['bmHeight'], bmp_info['bmWidth'], 4))
+            return cv.cvtColor(screenshot, cv.COLOR_BGRA2BGR)
+
+    def locate_template(self, template: str, confidence: float) -> tuple[int, int]:
+        
+        template: cv.Mat = cv.imread(f"{self.template_path}/{template}", cv.IMREAD_GRAYSCALE)
+        image: cv.Mat = cv.cvtColor(self.screenshot(), cv.COLOR_BGR2GRAY)
+
+        result: cv.Mat = cv.matchTemplate(image, template, cv.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv.minMaxLoc(result)
+
+        if max_val > confidence:
+            return (
+                    max_loc[0] + (template.shape[1] // 2),
+                    max_loc[1] + (template.shape[0] // 2)
+                )
+
+    def await_template(self, template: str, confidence: float, timeout: int) -> bool:
+        
+        start = time.time()
+
+        while True:
+
+            if self.locate_template(template, confidence):
+                return True
+            
+            if time.time() - start >= timeout:
+                return False
+            
+    def match_pixel(self, xy: tuple[int, int], rgb: tuple[int, int, int], variance: int) -> bool:
+
+        img: cv.Mat = cv.cvtColor(self.screenshot(), cv.COLOR_BGR2RGB)
+        pixel_rgb: np.ndarray = img[xy[1], xy[0]]
+        print(pixel_rgb)
+        
+        return all(abs(pixel_rgb[i] - rgb[i]) <= variance for i in range(3))
 
         
 if __name__ == "__main__": 
