@@ -7,6 +7,8 @@ import time
 from typing import Literal
 from tools import threaded
 
+from settings.settings import KeyCodes, WindowMessage
+
 
 class ProcessWindow:
 
@@ -120,11 +122,11 @@ class ProcessWindow:
                 
         return all(abs(pixel_rgb[i] - rgb[i]) <= variance for i in range(3))
 
-    def press(self, key: int, duration: float) -> None:
+    def press(self, key: int, duration: float = 0) -> None:
 
-        ctypes.windll.user32.PostMessageA(self.hwnd, 0x0100, key, 0) # Button down
+        ctypes.windll.user32.PostMessageA(self.hwnd, WindowMessage.KEYDOWN, key, 0) # Button down
         time.sleep(duration)
-        ctypes.windll.user32.PostMessageA(self.hwnd, 0x0101, key, 0) # Button up
+        ctypes.windll.user32.PostMessageA(self.hwnd, WindowMessage.KEYUP, key, 0) # Button up
 
     @threaded
     def hold(self, key: int, duration: float) -> None:
@@ -136,14 +138,14 @@ class ProcessWindow:
         for i in range(clicks):
             ctypes.windll.user32.PostMessageA( # Button down
                 self.hwnd, 
-                0x0201 if button == "left" else 0x0204, 
-                0x0001 if button == "left" else 0x0002, 
+                WindowMessage.LBUTTONDOWN if button == "left" else WindowMessage.RBUTTONDOWN, 
+                KeyCodes.MK_LBUTTON if button == "left" else KeyCodes.MK_RBUTTON, 
                 xy[1] << 16 | xy[0] if xy else 0
             )
             ctypes.windll.user32.PostMessageA( # Button up
                 self.hwnd, 
-                0x0202 if button == "left" else 0x0205, 
-                0x0001 if button == "left" else 0x0002,  
+                WindowMessage.LBUTTONUP if button == "left" else WindowMessage.RBUTTONUP, 
+                KeyCodes.MK_LBUTTON if button == "left" else KeyCodes.MK_RBUTTON,  
                 xy[1] << 16 | xy[0] if xy else 0
             )
             time.sleep(interval)
