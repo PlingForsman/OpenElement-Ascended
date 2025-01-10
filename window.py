@@ -44,15 +44,15 @@ class ProcessWindow:
 
         crash_str: list[str] = ["The UE-ShooterGame Game has crashed and will close", "Crash!"]
 
-        try:
-            if any(
-                [self.find_window(None, string) for string in crash_str]
-            ):
-                return True
-            
-        except:
-            return False
-        
+        for crash in crash_str:
+            try:
+                if self.find_window(None, crash): # Crash has been detected
+                    return True 
+
+            except:
+                pass # Crash window not found
+
+        return False # No crash window was found 
 
 
 if __name__ == "__main__": 
