@@ -1,5 +1,6 @@
 import ctypes, win32gui
 from pathlib import Path
+import cv2 as cv
 
 
 class ProcessWindow:
@@ -53,8 +54,11 @@ class ProcessWindow:
                 pass # Crash window not found
 
         return False # No crash window was found 
+    
+    def screenshot(self, region: tuple[int, int] = None) -> cv.Mat:
+        pass
 
-
+        
 if __name__ == "__main__": 
-    screen = ProcessWindow()
-    print(screen.__repr__())
+    window = ProcessWindow()
+    print(window.__repr__())
