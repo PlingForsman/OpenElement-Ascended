@@ -1,0 +1,21 @@
+{
+    "gacha": {
+        "prefix": "",
+        "count": ""
+    },
+    "pego": {
+        "prefix": "",
+        "count": ""
+    },
+    "grinding": {
+        "prefix": "", // where grinding happens, likely will save wished resources into "resource_prefix" instead of bothering with autocraft
+        "resource_prefix": "", // where do put resources, potentially might be able to transfer into main directly
+        "desired_resources": [] // metal, paste, crystal etc. Gates, tree plats, etc will probably always be saved
+    },
+    "webhook": {
+        "tribelogs": "",
+        "dashboard": "",
+        "logs": ""
+    },
+    "bed2tp": ""
+}
