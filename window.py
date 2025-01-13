@@ -103,7 +103,7 @@ class ProcessWindow:
                     max_loc[1] + (template.shape[0] // 2)
                 )
 
-    def await_template(self, template: str, confidence: float, timeout: int) -> bool:
+    def await_template(self, template: str, confidence: float, timeout: float) -> bool:
         
         start = time.time()
 
@@ -128,21 +128,32 @@ class ProcessWindow:
         time.sleep(duration)
         ctypes.windll.user32.PostMessageA(self.hwnd, WindowMessage.KEYUP, key, 0) # Button up
 
+    def await_pixel_match(self, xy: tuple[int, int], rgb: tuple[int, int, int], variance: int, timeout: float) -> bool:
+
+        start = time.time()
+
+        while True:
+            if self.match_pixel(xy, rgb, variance):
+                return True
+            
+            if time.time() - start >= timeout:
+                return False
+
     @threaded
     def hold(self, key: int, duration: float) -> None:
 
         self.press(key, duration)
 
-    def click(self, button: Literal["left", "right"] = "left", xy: tuple[int, int] = None, clicks: int = 1, interval: int = 0) -> None:
+    def click(self, button: Literal["left", "right"] = "left", xy: tuple[int, int] = None, clicks: int = 1, interval: float = 0) -> None:
 
         for i in range(clicks):
-            ctypes.windll.user32.PostMessageA( # Button down
+            ctypes.windll.user32.PostMessageA(
                 self.hwnd, 
                 WindowMessage.LBUTTONDOWN if button == "left" else WindowMessage.RBUTTONDOWN, 
                 KeyCodes.MK_LBUTTON if button == "left" else KeyCodes.MK_RBUTTON, 
                 xy[1] << 16 | xy[0] if xy else 0
             )
-            ctypes.windll.user32.PostMessageA( # Button up
+            ctypes.windll.user32.PostMessageA(
                 self.hwnd, 
                 WindowMessage.LBUTTONUP if button == "left" else WindowMessage.RBUTTONUP, 
                 KeyCodes.MK_LBUTTON if button == "left" else KeyCodes.MK_RBUTTON,  
