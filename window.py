@@ -2,7 +2,9 @@ import ctypes, win32gui, win32ui
 from pathlib import Path
 import cv2 as cv
 import numpy as np
+from pytesseract import pytesseract as ocr
 import time
+import subprocess
 
 from typing import Literal
 from tools import threaded
@@ -15,17 +17,17 @@ class ProcessWindow:
     def __init__(self) -> None:
         ctypes.windll.user32.SetProcessDPIAware()
 
-        self.hwnd = self.find_window("UnrealWindow", "ArkAscended")
-        self.resolution = self.get_resolution()
-        self.template_path = f"{Path(__file__).parent}/templates"
-        self.ocr_path = r"C:/Program Files/Tesseract-OCR/tesseract.exe"
+        self.hwnd: int = self.find_window("UnrealWindow", "ArkAscended")
+        self.resolution: tuple[int, int] = self.get_resolution()
+        self.template_path: str = f"{Path(__file__).parent}/templates"
+        ocr.tesseract_cmd = "C:/Program Files/Tesseract-OCR/tesseract.exe"
 
     def __repr__(self) -> str:
         return (
             f"HWND: {self.hwnd}",
             f"Resolution: {self.resolution[0]}x{self.resolution[1]}",
             f"Template Path: {self.template_path}",
-            f"OCR Path: {self.ocr_path}"
+            f"OCR Path: {ocr.tesseract_cmd}"
         )
     
     def find_window(self, PyResourceId: str | None, window_title: str) -> int:
@@ -107,13 +109,12 @@ class ProcessWindow:
         
         start = time.time()
 
-        while True:
+        while time.time() - start <= timeout:
 
             if self.locate_template(template, confidence):
                 return True
-            
-            if time.time() - start >= timeout:
-                return False
+
+        return False
             
     def match_pixel(self, xy: tuple[int, int], rgb: tuple[int, int, int], variance: int) -> bool:
 
@@ -132,12 +133,12 @@ class ProcessWindow:
 
         start = time.time()
 
-        while True:
+        while time.time() - start <= timeout:
+
             if self.match_pixel(xy, rgb, variance):
                 return True
             
-            if time.time() - start >= timeout:
-                return False
+        return False
 
     @threaded
     def hold(self, key: int, duration: float) -> None:
@@ -160,6 +161,33 @@ class ProcessWindow:
                 xy[1] << 16 | xy[0] if xy else 0
             )
             time.sleep(interval)
+
+    def read_text(self, region: tuple[int, int, int, int], config: str | None) -> str:  
+
+        img: cv.Mat = self.screenshot()[region[0]:region[1], region[2]:region[4]]
+        
+        return ocr.image_to_string(
+            image=img,
+            lang="eng",
+            config=config
+        )
+    
+    def launch_game(self) -> None:
+
+        subprocess.run(f"start steam://rungameid/2399830",  shell=True)
+        start = time.time()
+        
+        while time.time() - start <= 50:
+
+            try:
+                self.hwnd = self.find_window("UnrealWindow", "ArkAscended")
+                return 
+
+            except:
+                time.sleep(1)
+
+        raise ValueError("Window 'ArkAscended' was not found within 50 seconds after being started")
+
         
 if __name__ == "__main__": 
     window = ProcessWindow()
