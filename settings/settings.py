@@ -1,5 +1,7 @@
 import json
 
+from enum import Enum
+
 # GameUserSettings.ini has the following that needs to be grabbed
 "LookLeftRightSensitivity, LookUpDownSensitivity, FOVMultiplier, LastJoinedSessionPerCategory, bDisableMenuTransitions, bReverseTribeLogOrder, HideItemTextOverlay=True"
 
@@ -7,11 +9,14 @@ import json
 ""
 
 
-def load_keybinds() -> dict[str, int]:
-    pass
+def load_keybinds(path: str) -> dict[str, int]:
+    
+    #keybinds = get_keybinds(path) for later date
 
+    with open("settings/keybinds.json", "r") as f:
+        keybinds = json.load(f)
 
-    return convert_keys()
+    return convert_keys(keybinds)
 
 def load_tower_settings() -> dict:
 
@@ -20,10 +25,10 @@ def load_tower_settings() -> dict:
             return json.load(f)
         
     except json.JSONDecodeError:
-        print("WARNING: Tower settings are corrupted")
+        raise Exception("WARNING: Tower settings are corrupted")
 
     except FileNotFoundError:
-        print("WARNING: Tower settings file does not exist")
+        raise Exception("WARNING: Tower settings file does not exist")
 
 def convert_keys(key_dict: dict[str, str]) -> dict[str, int]:
 
@@ -31,6 +36,21 @@ def convert_keys(key_dict: dict[str, str]) -> dict[str, int]:
         key_dict[key] = KeyCodes.dict[str(key_dict[key])]
     
     return key_dict
+
+def get_keybinds(path: str) -> dict[str, str]:
+
+    try:
+        with open(path, "r") as f:
+            raw = f.readlines()
+
+            if not raw:
+                return default_keys
+            
+            for line in raw:
+                pass
+
+    except FileNotFoundError:
+        raise Exception(f"WARNING: ARK keybinds do not exist at '{path}'")
 
 
 default_keys: dict[str, str] = {
@@ -57,7 +77,9 @@ default_keys: dict[str, str] = {
     "hotbar_9": "9",
 }
 
-class WindowMessage:
+
+
+class WindowMessage(Enum):
     LBUTTONDOWN = 0x0201 # Left click down
     LBUTTONUP = 0x0202   # Left click up
 
@@ -67,7 +89,7 @@ class WindowMessage:
     KEYDOWN = 0x0100     # Key down
     KEYUP = 0x0101       # Key up
 
-class KeyCodes: 
+class KeyCodes(Enum): 
     MK_LBUTTON = 0x0001     # Left click
     MK_RBUTTON = 0x0002     # Right click
 
